@@ -77,17 +77,19 @@ This project enables controlling hardware (motors, actuators, robots, etc.) remo
 
 ### 1. Backend (EC2 Spring Boot WebSocket Server)
 
-* Clone repo on EC2:
+* Clone repo on EC2 and run the spring boot manually using maven:
 
   ```bash
   git clone https://github.com/your-username/RealTime_Video_Streaming_and_RC_Remote_Over_the_Internet.git
-  cd RealTime_Video_Streaming_and_RC_Remote_Over_the_Internet/server
+  cd RealTime_Video_Streaming_and_RC_Remote_Over_the_Internet
   ```
-* Build and run inside Docker:
+* or Build and run inside Docker(easy):
 
   ```bash
-  docker build -t websocket-server .
-  docker run -d -p 8080:8080 websocket-server
+docker pull priyanshu1284/webremote-app:latest
+docker stop webremote-app && docker rm webremote-app            #stop and remove container  
+docker run -d -p 8080:8080 --name webremote-app priyanshu1284/webremote-app:latest	# Run the new container
+
   ```
 
 ### 2. TURN/STUN Server (for WebRTC)
@@ -124,26 +126,31 @@ This project enables controlling hardware (motors, actuators, robots, etc.) remo
   sudo apt install python3-pip
   pip3 install websockets pyserial aiortc
   ```
-* Run WebSocket + WebRTC client:
+* Run WebSocket + WebRTC client (run both the code as background task):
+
+   RTC_Server.py       #Remember to change IP with your EC2 IP in baseURL
+   main_Controller.py  #Remember to change with IP your EC2 IP in baseURL
 
   ```bash
-  python3 client.py --server ws://<EC2-IP>:8080
+  cd ./jetson_OR_RasberryPI_Remote_server
+  bash run.sh
   ```
 
 ### 4. Frontend
 
-* Open the frontend in browser (React/HTML app).
-* Connect to WebSocket server and start sending RC commands.
-* Video stream will establish via WebRTC.
+* The frontend(React) is already hosted using the springboot static  folder if you use the Docker. 
+* If you want to made any change then just go to frontent folder and run npm i and npm run dev.
+* Now open frontend in browser with your ec2-ip:8080
+* remote controller and Video stream will establish via WebRTC.
 
 ---
 
 ## 🚀 Usage
 
-1. Start **backend WebSocket server** on EC2.
+1. Start **backend WebSocket server** on EC2 uing Docker.
 2. Ensure **TURN/STUN server** is running.
-3. Run **client.py** on Jetson/Raspberry Pi to handle RC + video streaming.
-4. Open the **frontend in browser** → Control RC & see video stream in real time.
+3. Run **run.sh** on Jetson/Raspberry Pi to handle RC + video streaming.
+4. Open the **frontend in browser with your ec2 ip:8080** → Control RC & see video stream in real time.
 
 ---
 
@@ -168,4 +175,3 @@ This project is licensed under the **MIT License**.
 
 ---
 
-Would you like me to also create **step-by-step setup commands for the frontend part** (e.g., if it’s React, Vue, or plain HTML/JS)? That way the README will have complete run instructions.
