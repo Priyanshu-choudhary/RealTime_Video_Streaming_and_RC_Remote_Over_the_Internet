@@ -1,11 +1,11 @@
-RealTime_Video_Streaming_and_RC_Remote_Over_the_Internet
+# RealTime_Video_Streaming_and_RC_Remote_Over_the_Internet
 
-🚀 Low-latency video streaming and remote control system over the internet using WebRTC, WebSockets, and Dockerized Spring Boot backend.
+## 🚀 Low-latency video streaming and remote control system over the internet using WebRTC, WebSockets, and Dockerized Spring Boot backend.
 This project enables controlling hardware (motors, actuators, robots, etc.) remotely while streaming real-time video with sub-100ms latency.
 
 ✨ Features
 
-Remote Control (RC) over WebSocket
+## Remote Control (RC) over WebSocket
 
 Sends 4-byte binary packets from the web frontend.
 
@@ -45,7 +45,7 @@ Works with Jetson Nano and Raspberry Pi.
 
 Python WebSocket client for receiving control signals and handling motor commands.
 
-🏗 System Architecture
+```python 🏗 System Architecture
 [Frontend Browser]
     |
     | (Binary RC packets + JSON signaling over WebSocket)
@@ -61,7 +61,7 @@ Python WebSocket client for receiving control signals and handling motor command
               |--> [WebRTC Peer Connection: Browser <-> Jetson/Pi]
                         (Video Streaming over STUN/TURN)
 
-⚡ Performance
+## ⚡ Performance
 
 RC command latency: <100ms
 
@@ -71,26 +71,36 @@ Bandwidth-efficient binary messaging
 
 Works across NAT/firewalls using TURN/STUN
 
-🛠️ Installation & Setup
-1. Backend (EC2 Spring Boot WebSocket Server)
+## 🛠️ Installation & Setup
+### 1. Backend (EC2 Spring Boot WebSocket Server)
 
 Clone repo on EC2:
 
 git clone https://github.com/your-username/RealTime_Video_Streaming_and_RC_Remote_Over_the_Internet.git
 cd RealTime_Video_Streaming_and_RC_Remote_Over_the_Internet/server
 
+=================Docker Build for WebRemote on local/AWS EC2==========
 
-Build and run inside Docker:
+Build and deploy using docker local:
 
-docker build -t websocket-server .
-docker run -d -p 8080:8080 websocket-server
+docker build -t priyanshu1284/webremote-app:latest .		    #Build docker image
+docker build --no-cache -t priyanshu1284/webremote-app:latest . #Build without chace
+docker run -p 8080:8080 webremote-app  				            #Run locally
+docker push priyanshu1284/webremote-app:latest			        #Push docker image to docker hub
 
-2. TURN/STUN Server (for WebRTC)
+#DOCKER On AWS server:
+
+docker pull priyanshu1284/webremote-app:latest
+docker stop webremote-app && docker rm webremote-app             #stop and remove container  
+docker run -d -p 8080:8080 --name webremote-app priyanshu1284/webremote-app:latest	# Run the new container
+
+
+### 2. TURN/STUN Server (for WebRTC)
 
 Deploy coturn on AWS EC2:
 
-sudo apt update
-sudo apt install coturn
+```bash sudo apt update
+```bash sudo apt install coturn
 
 
 Configure /etc/turnserver.conf with:
@@ -103,12 +113,28 @@ static-auth-secret=your_secret_key
 realm=yourdomain.com
 total-quota=100
 
+eg.
+
+listening-port=3478
+tls-listening-port=5349
+listening-ip=0.0.0.0
+external-ip=13.201.65.188/172.31.47.116
+
+min-port=50000
+max-port=60000
+
+verbose
+fingerprint
+lt-cred-mech
+realm=13.201.65.188
+user=perceptron:root
+
 
 Start the service:
 
-sudo service coturn start
+sudo systemctl restart coturn
 
-3. Jetson/Raspberry Pi Client
+### 3. Jetson/Raspberry Pi Client
 
 Install dependencies:
 
@@ -121,7 +147,7 @@ Run WebSocket + WebRTC client:
 
 python3 client.py --server ws://<EC2-IP>:8080
 
-4. Frontend
+### 4. Frontend
 
 Open the frontend in browser (React/HTML app).
 
@@ -129,7 +155,7 @@ Connect to WebSocket server and start sending RC commands.
 
 Video stream will establish via WebRTC.
 
-🚀 Usage
+## 🚀 Usage
 
 Start backend WebSocket server on EC2.
 
@@ -139,7 +165,7 @@ Run client.py on Jetson/Raspberry Pi to handle RC + video streaming.
 
 Open the frontend in browser → Control RC & see video stream in real time.
 
-📌 Roadmap
+## 📌 Roadmap
 
 ✅ v1.0 – Working prototype with WebSocket + WebRTC integration.
 
@@ -153,8 +179,8 @@ Open the frontend in browser → Control RC & see video stream in real time.
 
 Pull requests and feature suggestions are welcome!
 
-📜 License
+## 📜 License
 
 This project is licensed under the MIT License.
 
-Would you like me to also create step-by-step setup commands for the frontend part (e.g., if it’s React, Vue, or plain HTML/JS)? That way the README will have complete run instructions.
+
