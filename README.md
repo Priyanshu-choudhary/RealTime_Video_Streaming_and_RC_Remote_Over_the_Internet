@@ -86,9 +86,9 @@ This project enables controlling hardware (motors, actuators, robots, etc.) remo
 * or Build and run inside Docker(easy):
 
   ```bash
-docker pull priyanshu1284/webremote-app:latest
-docker stop webremote-app && docker rm webremote-app            #stop and remove container  
-docker run -d -p 8080:8080 --name webremote-app priyanshu1284/webremote-app:latest	# Run the new container
+    docker pull priyanshu1284/webremote-app:latest
+    docker stop webremote-app && docker rm webremote-app            #stop and remove container  
+    docker run -d -p 8080:8080 --name webremote-app priyanshu1284/webremote-app:latest	# Run the new container
 
   ```
 
