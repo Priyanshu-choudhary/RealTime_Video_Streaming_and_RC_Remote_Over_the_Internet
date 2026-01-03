@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  remote-receiver:
+    build: 
+      context: /mnt/sdcard/home/0_AI_Bot/Perceptron
+      dockerfile: Dockerfile.jetson
+    container_name: remote-receiver
+    restart: always
+    # If your CT6B uses a USB/Serial port, you MUST map it here:
+    devices:
+      - "/dev/ttyUSB0:/dev/ttyUSB0"
+    environment:
+      - SERVER_URL=ws://<YOUR_NGROK_URL_OR_PI_IP>:8080
