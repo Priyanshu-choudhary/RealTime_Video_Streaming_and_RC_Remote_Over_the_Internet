@@ -5,6 +5,7 @@ from serialSender import SerialSender
 from webClass import WebSocketDecoder
 import time
 
+MAX_PWM_OUTPUT = 100
 RC_MIN = 1000
 RC_MAX = 2000
 RC_CENTER = 1500
@@ -52,7 +53,7 @@ def compute_motor_commands(throttle_rc, roll_rc, rc_deadband=RC_DEADBAND):
 
     # If throttle is zero-ish and roll present -> pivot in place
     if th_signed == 0 and roll_signed != 0:
-        pwm = clamp(abs(roll_signed), 0, 255)
+        pwm = clamp(abs(roll_signed), 0, MAX_PWM_OUTPUT)
         if roll_signed > 0:
             # roll positive => pivot right (left forward, right reverse)
             return 3, pwm, pwm
@@ -70,7 +71,7 @@ def compute_motor_commands(throttle_rc, roll_rc, rc_deadband=RC_DEADBAND):
 
     # If they are opposite signs and roll dominates throttle -> pivot
     if left_signal * right_signal < 0 and abs(roll_signed) > abs(th_signed):
-        pwm = max(abs(left_signal), abs(right_signal))
+        pwm = clamp(max(abs(left_signal), abs(right_signal)), 0, MAX_PWM_OUTPUT)
         if roll_signed > 0:
             return 3, pwm, pwm
         else:
@@ -79,13 +80,13 @@ def compute_motor_commands(throttle_rc, roll_rc, rc_deadband=RC_DEADBAND):
     # Otherwise direction follows throttle sign (average = throttle)
     if th_signed > 0:
         # Forward: take positive parts, zero negatives
-        pwm_l = clamp(max(0, left_signal), 0, 255)
-        pwm_r = clamp(max(0, right_signal), 0, 255)
+        pwm_l = clamp(max(0, left_signal), 0, MAX_PWM_OUTPUT)
+        pwm_r = clamp(max(0, right_signal), 0, MAX_PWM_OUTPUT)
         return 1, int(pwm_l), int(pwm_r)
     else:
         # Reverse: take absolute of negative parts
-        pwm_l = clamp(max(0, -left_signal), 0, 255)
-        pwm_r = clamp(max(0, -right_signal), 0, 255)
+        pwm_l = clamp(max(0, -left_signal), 0, MAX_PWM_OUTPUT)
+        pwm_r = clamp(max(0, -right_signal), 0, MAX_PWM_OUTPUT)
         return 2, int(pwm_l), int(pwm_r)
 
 
@@ -98,7 +99,7 @@ async def main():
 
     try:
         # Initialize WebSocket receiver
-        client = WebSocketDecoder("ws://13.201.65.188:8080/ws")
+        client = WebSocketDecoder("wss://unmelodramatically-nonoxidating-mana.ngrok-free.dev/ws")
         await client.connect()
         asyncio.ensure_future(client.listen())
 
