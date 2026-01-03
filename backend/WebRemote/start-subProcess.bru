@@ -1,0 +1,15 @@
+meta {
+  name: start-subProcess
+  type: http
+  seq: 1
+}
+
+get {
+  url: localhost:8080/subprocess/start
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

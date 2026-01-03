@@ -7,6 +7,7 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.AbstractWebSocketHandler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.Set;
@@ -19,6 +20,20 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
     private final Map<String, String> sessionRoles = new ConcurrentHashMap<>(); // sessionId -> role
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    public void broadcastData(byte[] data) {
+        for (WebSocketSession session : sessions) {
+            if (session.isOpen()) {
+                try {
+                    // We simply send the binary data to everyone connected
+                    // You can add logic here to filter by role (e.g., only send to "browser" role)
+                    // Note: Creating a new BinaryMessage for each send is safer for buffer management
+                    session.sendMessage(new BinaryMessage(data));
+                } catch (IOException e) {
+                    System.err.println("Error broadcasting to session " + session.getId() + ": " + e.getMessage());
+                }
+            }
+        }
+    }
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         String payload = message.getPayload();
@@ -61,18 +76,32 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
 //        System.out.println("Received binary message from session: " + session.getId());
 
         String senderRole = sessionRoles.get(session.getId());
+        // inside handleBinaryMessage
+// ...
         if (senderRole != null) {
             for (WebSocketSession otherSession : sessions) {
-                if (otherSession != session && otherSession.isOpen()) {
+                if (otherSession != session) {
                     String otherRole = sessionRoles.get(otherSession.getId());
-                    // Only send to opposite role (pi <-> browser)
                     if (otherRole != null && !otherRole.equals(senderRole)) {
-//                        System.out.println("Relaying binary from " + senderRole + " to " + otherRole);
-                        otherSession.sendMessage(new BinaryMessage(buffer.duplicate(), true));
+                        // ADDED ROBUSTNESS CHECK AND ERROR HANDLING
+                        if (otherSession.isOpen()) {
+                            try {
+                                otherSession.sendMessage(new BinaryMessage(buffer.duplicate(), true));
+                            } catch (IOException e) {
+                                System.err.println("Error sending message to session " + otherSession.getId() + ": " + e.getMessage());
+                                // Optional: Close the session if a send error occurs to clean it up
+                                if (e.getMessage().contains("Connection reset by peer")) {
+                                    otherSession.close(); // Triggers afterConnectionClosed for cleanup
+                                }
+                            }
+                        }
                     }
                 }
             }
-        } else {
+        }
+// ... rest of the method
+
+         else {
             // Fallback: if no role is set, broadcast to all (like old behavior)
             for (WebSocketSession otherSession : sessions) {
                 if (otherSession != session && otherSession.isOpen()) {

@@ -11,7 +11,7 @@ import TextField from "@mui/material/TextField";
 const RobotController = () => {
   const WS_ENDPOINT = import.meta.env.VITE_WS_ENDPOINT;
   const [ip, setIp] = useState(WS_ENDPOINT);
-  const { send, status, connection } = useWebSocket(`ws://${ip}/ws`);
+  const { send, status, connection } = useWebSocket(`wss://${ip}/ws`);
   const speedRef = useRef(0);
   const throttleRef = useRef(1500);
   const rollRef = useRef(1500);
@@ -29,6 +29,10 @@ const RobotController = () => {
   const [isSending, setIsSending] = useState(false);
   const [speed, setSpeed] = useState(0);
 
+useEffect(() => {
+ console.log(uiState);
+ 
+}, [uiState])
 
 
   const packBinaryData = () => {

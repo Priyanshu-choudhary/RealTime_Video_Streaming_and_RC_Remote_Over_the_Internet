@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "WebRemote",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}
