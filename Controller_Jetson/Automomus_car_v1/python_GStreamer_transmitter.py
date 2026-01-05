@@ -3,6 +3,7 @@ import gi
 import numpy as np
 import time 
 import tensorrt as trt 
+import math
 import pycuda.autoinit
 from Model_unet import TensorRTUnetSegmentor
 
@@ -24,46 +25,87 @@ FRAME_DURATION = int(Gst.SECOND / FPS)
 
 
 # TensorRT Model Configuration (Passed to Segmentor)
-ENGINE_FILE_PATH = "/mnt/sdcard/home/unet_mobilenetv2_marbel_floor_fp16.engine"
+ENGINE_FILE_PATH = "unet_mobilenetv2_Marbel.engine"
 MODEL_INPUT_H = 384  
 MODEL_INPUT_W = 384  
 
+CAM=0
 
-# The pipeline string 
+AWS_RTSP_URL = "rtsp://yadiec2.freedynamicdns.net:8554/cam2"
+
+# LAN pipeline  
+# PIPELINE_STR = (
+#     "appsrc name=mysource is-live=true format=3 caps=video/x-raw,format=BGR,width={width},height={height},framerate={fps_num}/1 ! "
+#     "videoconvert ! "
+#     "video/x-raw,format=I420 ! "
+#     "nvvidconv ! video/x-raw(memory:NVMM), format=NV12 ! "
+#     "nvv4l2h265enc bitrate=500000 control-rate=1 preset-level=1 insert-sps-pps=true ! "
+#     "h265parse ! rtph265pay pt=96 config-interval=1 ! "
+#     "udpsink host=10.11.253.113 port=5000"
+# ).format(width=WIDTH, height=HEIGHT, fps_num=FPS)
+
+
+# AWS MediaMTX pipeline with cheap webcam.
+#PIPELINE_STR = (
+#    "appsrc name=mysource is-live=true format=3 caps=video/x-raw,format=BGR,width={width},height={height},framerate={fps_num}/1 ! "
+#    "videoconvert ! "
+#    "video/x-raw,format=I420 ! "
+#    "nvvidconv ! "
+#    "video/x-raw(memory:NVMM),format=NV12 ! "
+#    "nvv4l2h264enc bitrate=200000 control-rate=1 preset-level=1 insert-sps-pps=true maxperf-enable=1 ! "
+#    "h264parse ! "
+#    "rtspclientsink location={location} protocols=tcp do-rtsp-keep-alive=true"
+#).format(width=WIDTH, height=HEIGHT, fps_num=FPS, location=AWS_RTSP_URL)
+
+# AWS MediaMTX pipeline with DJI webcam.
 PIPELINE_STR = (
-    "appsrc name=mysource is-live=true format=3 caps=video/x-raw,format=BGR,width={width},height={height},framerate={fps_num}/1 ! "
+    "appsrc name=mysource is-live=true format=3 "
+    "caps=video/x-raw,format=BGR,width={width},height={height},framerate={fps_num}/1 ! "
     "videoconvert ! "
     "video/x-raw,format=I420 ! "
-    "nvvidconv ! video/x-raw(memory:NVMM), format=NV12 ! "
-    "nvv4l2h265enc bitrate=500000 control-rate=1 preset-level=1 insert-sps-pps=true ! "
-    "h265parse ! rtph265pay pt=96 config-interval=1 ! "
-    "udpsink host=10.170.119.113 port=5000"
-).format(width=WIDTH, height=HEIGHT, fps_num=FPS)
+    "nvvidconv ! "
+    "video/x-raw(memory:NVMM),format=NV12 ! "
+    "nvv4l2h264enc bitrate=800000 control-rate=1 preset-level=1 "
+    "insert-sps-pps=true maxperf-enable=1 ! "
+    "h264parse ! "
+    "rtspclientsink location={location} protocols=tcp do-rtsp-keep-alive=true"
+).format(width=WIDTH,height=HEIGHT,fps_num=FPS, location=AWS_RTSP_URL)
 
 pipeline = Gst.parse_launch(PIPELINE_STR)
 appsrc = pipeline.get_by_name('mysource')
 
 # --- Helper Function to Push Frames ---
+FRAME_DURATION = int(1e9 / FPS)
 def push_frame(frame):
-    """Converts a numpy array (cv2 frame) into a GstBuffer and pushes it."""
     global CURRENT_PTS
     
     frame = np.ascontiguousarray(frame)
     data = frame.tobytes()
     buffer = Gst.Buffer.new_wrapped(data)
     
+    # Timing is critical for RTSP stability
     buffer.duration = FRAME_DURATION
     buffer.pts = CURRENT_PTS
     buffer.dts = CURRENT_PTS 
     
+    # Increment by duration in nanoseconds
     CURRENT_PTS += FRAME_DURATION
     
     appsrc.emit('push-buffer', buffer)
-    
     return Gst.FlowReturn.OK
 
+
+def line_angle(p1, p2, q1, q2):
+    """Angle (deg) between line p1->p2 and q1->q2 in 2D."""
+    v1 = np.array([p2[0] - p1[0], p2[1] - p1[1]], dtype=float)
+    v2 = np.array([q2[0] - q1[0], q2[1] - q1[1]], dtype=float)
+
+    dot = v1 @ v2
+    det = v1[0] * v2[1] - v1[1] * v2[0]  # 2D "cross"
+    angle_rad = np.arctan2(abs(det), dot)
+    return np.degrees(angle_rad)
 # --- Main Execution ---
-def main():
+def process_camera_stream():
     
     # 1. Initialize Segmentor - Pass all necessary configuration constants
     try:
@@ -84,7 +126,7 @@ def main():
     print("GStreamer pipeline is running. Pushing frames...")
 
     # 3. Open Camera
-    cap = cv2.VideoCapture('/dev/video0', cv2.CAP_V4L2)
+    cap = cv2.VideoCapture(f'/dev/video{CAM}', cv2.CAP_V4L2)
     
     if not cap.isOpened():
         print("FATAL ERROR: Camera device is not opening. Check permissions/device name.")
@@ -152,16 +194,27 @@ def main():
 
                     center_points.append((x_center, y_center))
 
+            center  = (WIDTH // 2, HEIGHT - 1)
 
-            cv2.line(output_frame,center_points[0],center_points[-1],(0, 0, 0), 2)
-
+            #This is our predicted Path line
+            cv2.line(output_frame,center,center_points[1],(0, 0, 0), 2)
+            angle = line_angle(center, center_points[1], (WIDTH // 2,  vp_y), (WIDTH // 2, HEIGHT - 10))-180
+            # print(angle)
+            # Draw angle text
+            cv2.putText(output_frame, f"{angle:.1f} deg",
+                        (100, 100),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.9,
+                        (0, 0, 255),
+                        2)
             # --- 7. Push the processed frame ---
             push_frame(output_frame)
             
+            yield angle 
             # Exit key check
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
-
+    
     finally:
         # Cleanup
         print("Stopping pipeline.")
@@ -171,4 +224,4 @@ def main():
         cv2.destroyAllWindows()
 
 if __name__ == '__main__':
-    main()
+    process_camera_stream()

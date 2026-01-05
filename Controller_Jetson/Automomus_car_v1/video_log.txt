@@ -1,0 +1,16 @@
+NvMMLiteOpen : Block : BlockType = 4 
+===== NVMEDIA: NVENC =====
+NvMMLiteBlockCreate : Block : BlockType = 4 
+H264: Profile = 66, Level = 0 
+Loading TensorRT engine from unet_mobilenetv2_Marbel.engine...
+Engine loaded successfully.
+GStreamer pipeline is running. Pushing frames...
+Camera initialized. Waiting 0.3 seconds for hardware to stabilize...
+Stopping pipeline.
+Opening in BLOCKING MODE 
+Traceback (most recent call last):
+  File "python_GStreamer_transmitter.py", line 194, in <module>
+    main()
+  File "python_GStreamer_transmitter.py", line 176, in main
+    cv2.line(output_frame,center_points[0],center_points[-1],(0, 0, 0), 2)
+IndexError: list index out of range

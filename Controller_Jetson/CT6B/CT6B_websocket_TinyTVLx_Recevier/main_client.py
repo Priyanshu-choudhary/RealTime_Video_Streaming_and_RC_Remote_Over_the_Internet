@@ -1,98 +1,95 @@
-# --- main_control.py ---
 import asyncio
 import sys
 import time
 
-# Import your existing library
-from serialSender import SerialSender 
-# Import the new modules
+from serialSender import SerialSender
 from RCDataDecoder import RCDataDecoder
 from rc_mixer import RCMixer
+from health_monitor import HealthMonitor
 
 # Configuration
-WS_URI = "ws://yadiec2.freedynamicdns.net:8080/ws" # Update to your ngrok address if needed
+WS_URI = "ws://yadiec2.freedynamicdns.net:8080/ws"
+HEALTH_URL = "http://yadiec2.freedynamicdns.net:8080/health"
 SERIAL_PORT = "/dev/ttyUSB0"
 BAUD_RATE = 115200
 
 async def main():
-    # 1. Initialize Serial Sender
     motor_serial = SerialSender(port=SERIAL_PORT, baudrate=BAUD_RATE)
     if not motor_serial.open_serial():
         print("❌ Failed to open serial port. Exiting.")
         sys.exit(1)
 
-    # 2. Initialize WebSocket Receiver
+    health = HealthMonitor(endpoint_url=HEALTH_URL, interval=2.0)
     client = RCDataDecoder(ws_uri=WS_URI)
-
-    # 3. Start the Receiver in the background
-    # asyncio.ensure_future is compatible with Python 3.6+
     asyncio.ensure_future(client.run_receiver())
-    ast_valid_packet_time = time.time()
 
-    # Tracks the last time we processed a valid, "fresh" packet
-    last_valid_packet_time = time.time()
-    
+    # --- Timing Variables ---
+    last_processed_timestamp = -1
+    last_valid_packet_local_time = time.time()
+    latency = 0
+    clock_offset = None  # To handle unsynced clocks
 
-    print("🚀 Motor Control System Started with Latency Protection.")
-    print("Waiting for RC data...")
+    print("🚀 Motor Control System Started.")
 
     try:
-        # 4. Main Control Loop (Runs at approx 20Hz)
         while True:
-            # Control loop speed (50ms = 20Hz)
-            await asyncio.sleep(0.05) 
-
-            # Fetch latest data from the decoder class
-            # current_time_ms = int(time.time() * 1000)
-            current_time_ms = int(time.time() * 1000) & 0xFFFFFFFF 
-
+            await asyncio.sleep(0.05) # 20Hz
+            
+            current_local_ms = int(time.time() * 1000) & 0xFFFFFFFF
             data = client.get_latest_data()
-            #print(data)
-            #print((time.time() - last_valid_packet_time)* 1000)
-            if not data:
-                # No data received yet, skip this cycle
-                if time.time() - last_valid_packet_time > 1.0:
+            packet_timestamp = data.get("timestamp", 0) if data else None
+            
+            # 1. Check if we have a NEW packet
+            if data and packet_timestamp != last_processed_timestamp:
+                
+                # Calculate raw difference
+                raw_diff = (current_local_ms - packet_timestamp) & 0xFFFFFFFF
+                
+                # Initialize clock offset on the first packet
+                # This treats the first packet as having ~30ms latency base
+                if clock_offset is None:
+                    clock_offset = raw_diff - 30
+                    print(f"✅ Sync established. Clock Offset: {clock_offset}")
+
+                # Calculate relative latency
+                latency = (raw_diff - clock_offset) & 0xFFFFFFFF
+                
+                # Sanity check: if latency is huge, it's a wrap-around or glitch
+                if latency > 0x7FFFFFFF: latency = 0 
+
+                last_valid_packet_local_time = time.time()
+                last_processed_timestamp = packet_timestamp
+
+                # 2. Logic: Only process if latency is under 1 second
+                if latency < 1000:
+                    throttle = data.get("Pitch", 1500)
+                    roll     = data.get("Roll", 1500)
+                    aux1     = data.get("Aux1", 1500)
+                    direction, pwm1, pwm2 = RCMixer.compute_motor_commands(throttle, roll, aux1)
+                    motor_serial.send_motor_command(direction, pwm1, pwm2)
+                else:
                     motor_serial.stop()
-                    
-
-                continue
-
-	    # 1. Extract embedded timestamp from sender
-            packet_timestamp = data.get("timestamp", 0)
-            latency = current_time_ms - packet_timestamp
-
-            # 2. Check for stale data (Discard if latency > 1000ms)
-            if latency > 1000:
-                # Packet is too old; don't process it.
-                # Check if we need to emergency stop due to lack of fresh data
-                if (time.time() - last_valid_packet_time) > 1.0:
-                    # print(f"⚠️ High Latency ({latency}ms) or No Data. Sending STOP.")
+            
+            else:
+                # 3. No new data: Check how long since the last packet arrived
+                ms_since_last = (time.time() - last_valid_packet_local_time) * 1000
+                
+                if ms_since_last > 1000:
+                    latency = 0 # As per your request: no latency if no continuous data
                     motor_serial.stop()
-                continue
 
-            # 3. If we reached here, the packet is fresh!
-            last_valid_packet_time = time.time() # Update watchdog
-            # Safely get values (Default to 1500/Center if key missing)
-            throttle            = data.get("Pitch", 1500)
-            roll                = data.get("Roll", 1500)
-            rc_reft_right_mixer = data.get("Aux1", 1500)
-            # Use the Mixer class to calculate motor values
-            direction, pwm1, pwm2 = RCMixer.compute_motor_commands(throttle, roll,rc_reft_right_mixer)
-
-            # Debug output (optional, uncomment to see live values)
-            # print(f"Thr: {throttle} Rol: {roll} -> Dir: {direction} L: {pwm1} R: {pwm2}")
-
-            # Send to motors using your library
-            motor_serial.send_motor_command(direction, pwm1, pwm2)
+            # 4. Update Health Monitor
+            # last_valid_packet_local_time is passed as a 32-bit MS timestamp
+            # ms_since_last = int((time.time() - last_valid_packet_local_time) * 1000)
+            health.update(int(latency), int(last_valid_packet_local_time * 1000))
 
     except KeyboardInterrupt:
-        print("\n🛑 Stopping...")
         motor_serial.stop()
     finally:
+        await health.close()
         motor_serial.close_serial()
 
 if __name__ == "__main__":
-    # Python 3.6 compatible execution
     loop = asyncio.get_event_loop()
     try:
         loop.run_until_complete(main())
