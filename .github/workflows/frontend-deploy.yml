@@ -38,9 +38,9 @@ jobs:
           username: ec2-user          # Amazon Linux default
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            cd ${{ secrets.EC2_PATH }}
+            cd /home/ec2-user/RealTime_Video_Streaming_and_RC_Remote_Over_the_Internet
             git pull origin master
-            cd /home/ec2-user/RealTime_Video_Streaming_and_RC_Remote_Over_the_Internet/frontend-Remix
+            cd frontend-Remix
             npm install
             npm run build
             sudo systemctl restart frontend
