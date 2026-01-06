@@ -39,23 +39,50 @@ async def main(shared_angle, shared_seq):
     print("🚀 Motor Control System Started. Waiting for data...")
 
     try:
+        # --- main_client.py ---
+
         while True:
-            await asyncio.sleep(0.02) # Run at 50Hz for smoother PID
+            await asyncio.sleep(0.02)
             
             data = client.get_latest_data()
-            current_local_ms = int(time.time() * 1000) & 0xFFFFFFFF
-            
-            # --- RC DATA HANDLING ---
-            if data and data.get("timestamp") != last_processed_timestamp:
-                packet_ts = data.get("timestamp")
-                raw_diff = (current_local_ms - packet_ts) & 0xFFFFFFFF
-                
-                if clock_offset is None: clock_offset = raw_diff - 30
-                latency = (raw_diff - clock_offset) & 0xFFFFFFFF
-                
-                last_valid_packet_local_time = time.time()
-                last_processed_timestamp = packet_ts
+            if not data:
+                continue
 
+            # --- 1. HANDLE PACKET TIMING & LATENCY ---
+            # We ONLY do this if 'timestamp' is present (which only happens in RC frames)
+            packet_ts = data.get("timestamp")
+            
+            if packet_ts is not None:
+                if packet_ts != last_processed_timestamp:
+                    current_local_ms = int(time.time() * 1000) & 0xFFFFFFFF
+                    raw_diff = (current_local_ms - packet_ts) & 0xFFFFFFFF
+                    
+                    if clock_offset is None: 
+                        clock_offset = raw_diff - 30
+                    
+                    latency = (raw_diff - clock_offset) & 0xFFFFFFFF
+                    last_valid_packet_local_time = time.time()
+                    last_processed_timestamp = packet_ts
+                    
+                    # Only update health monitor if we have valid latency data
+                    health.update(int(latency), int(last_valid_packet_local_time * 1000))
+            
+            # --- 2. HANDLE PID CONFIG UPDATES ---
+            # Check if this is a Config frame
+            if data.get("_type") == "CONFIG":
+                # IDs are mapped in RCDataDecoder.py RC_CHANNELS
+                if "Kp" in data: steering_pid.kp = data["Kp"]
+                if "Ki" in data: steering_pid.ki = data["Ki"]
+                if "Kd" in data: steering_pid.kd = data["Kd"]
+                # print(f"⚙️ PID Parameters Updated: P={steering_pid.kp}, I={steering_pid.ki}, D={steering_pid.kd}")
+                # We don't want to run motor logic on a pure config packet, 
+                # so we wait for the next RC packet.
+                continue 
+
+            # --- 3. MODE SELECTION & MOTOR CONTROL ---
+            # This part only runs if it's NOT a config packet or after timing is updated
+            aux1 = data.get("Aux1", 1000)
+   
             # --- MODE SELECTION & EXECUTION ---
             # We check the local RC data to see if the user wants Manual or Auto
             # Usually, we use a switch like Aux1
