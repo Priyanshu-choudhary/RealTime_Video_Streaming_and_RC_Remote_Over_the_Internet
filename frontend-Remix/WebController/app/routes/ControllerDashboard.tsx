@@ -22,12 +22,12 @@ interface ConfigState {
 export default function ControllerDashboard() {
   const WS_ENDPOINT = import.meta.env.VITE_WS_ENDPOINT;
   /* eslint-disable react-hooks/exhaustive-deps */
-  const { send, connection, reconnect, lastMessage } = useWebSocket(`ws://${WS_ENDPOINT}/ws`);
+  const { send, connection, reconnect, lastMessage } = useWebSocket(`ws://${WS_ENDPOINT}:8080/ws`);
   const [videoKey, setVideoKey] = useState(0);
   const { uiState, speed, handleChange } = useButtonInput();
   const { health } = useHealth();
   const [logs, setLogs] = useState<{ time: string; msg: string; source: 'TX' | 'RX' }[]>([]);
-  const [config, setConfig] = useState<ConfigState>({ P: 1.0, I: 0.1, D: 0.01 });
+  const [config, setConfig] = useState<ConfigState>({ P: 4.0, I: 1, D: 0.01 });
 
   // Logic for Vehicle Offline
   const lastBeat = Math.floor((Date.now() - (health?.lastMessageTime || Date.now())) / 1000);
@@ -103,8 +103,17 @@ export default function ControllerDashboard() {
           </button>
 
           <StatusBadge
-            active={connection && !isVehicleOffline}
-            label={!connection ? "WS DISCONNECTED" : isVehicleOffline ? "VEHICLE OFFLINE" : "CONNECTED"}
+            active={connection && !isVehicleOffline && health?.containerStatus === "RUNNING"}
+
+            label={
+              !connection
+                ? "WS DISCONNECTED"
+                : isVehicleOffline
+                  ? "VEHICLE OFFLINE"
+                  : health?.containerStatus === "RUNNING"
+                    ? "CONNECTED"
+                    : "VEHICLE OFFLINE"
+            }
           />
           <div className="h-6 w-[1px] bg-slate-700" />
           <div className="flex flex-col items-end px-2">
@@ -171,7 +180,7 @@ export default function ControllerDashboard() {
 
 
         {/* CENTER COLUMN: FEED */}
-        <div className="lg:col-span-6">
+        <div className="lg:col-span-7">
           <Card className={`h-full min-h-[400px] relative group shadow-[0_0_40px_-10px_rgba(99,102,241,0.1)] ${isVehicleOffline ? "border-red-500/50" : "border-indigo-500/20"}`}>
             {/* Header Overlay */}
             <div className="absolute top-0 left-0 right-0 p-4 z-10 flex justify-between items-start bg-gradient-to-b from-black/80 to-transparent pointer-events-none">
@@ -220,18 +229,16 @@ export default function ControllerDashboard() {
         </div>
 
         {/* RIGHT COLUMN: DIAGNOSTICS */}
-        <div className="lg:col-span-3 space-y-6">
+        <div className="lg:col-span-2 space-y-6">
           <Card title="System Health">
             <MetricRow label="Status" value={isVehicleOffline ? "OFFLINE" : health?.containerStatus || "N/A"} />
             <MetricRow label="Uptime" value={health?.upTime || 0} unit="s" />
             <MetricRow label="Last Beat" value={lastBeat} unit="s ago" />
 
-            <div className="mt-4 pt-4 border-t border-slate-700/50">
-              <h4 className="text-[10px] uppercase text-slate-500 mb-2">Latency History</h4>
-              <div className="bg-slate-900/50 rounded p-1 border border-slate-800">
-                <LatencyGraph currentLatency={isVehicleOffline ? 0 : health?.latency || 0} />
-              </div>
-            </div>
+
+          </Card>
+          <Card title="Latency History">
+            <LatencyGraph currentLatency={isVehicleOffline ? 0 : health?.latency || 0} />
           </Card>
 
           <Card title="Auxiliary">

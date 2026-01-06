@@ -68,14 +68,14 @@ export function JoystickVisualizer({ x, y }: { x: number, y: number }) {
     const yPos = map(y) * -40; // Invert Y for screen coords
 
     return (
-        <div className="w-24 h-24 rounded-full border border-slate-700 bg-slate-800/50 relative mx-auto flex items-center justify-center">
+        <div className="w-40 h-40 rounded-full border border-slate-700 bg-slate-800/50 relative mx-auto flex items-center justify-center">
             {/* Crosshairs */}
             <div className="absolute w-full h-[1px] bg-slate-700/50" />
             <div className="absolute h-full w-[1px] bg-slate-700/50" />
 
             {/* Stick */}
             <div
-                className="w-12 h-12 rounded-full bg-indigo-500/20 border border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.3)] transition-transform duration-75 flex items-center justify-center"
+                className="w-5 h-5 rounded-full bg-indigo-500/20 border border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.3)] transition-transform duration-75 flex items-center justify-center"
                 style={{ transform: `translate(${xPos}px, ${yPos}px)` }}
             >
                 <div className="w-2 h-2 bg-indigo-400 rounded-full" />

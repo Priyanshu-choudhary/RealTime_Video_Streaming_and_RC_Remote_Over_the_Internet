@@ -56,8 +56,8 @@ export function OutputLog({ logs }: { logs: { time: string, msg: string, source:
     }, [logs]);
 
     return (
-        <Card title="System Log" className="flex flex-col h-[200px]">
-            <div className="flex-1 overflow-y-auto p-2 space-y-1 font-mono text-xs">
+        <Card title="System Log" className="flex flex-col h-[380px]">
+            <div className="flex-1 overflow-y-scroll p-2 space-y-1 font-mono text-xs">
                 {logs.length === 0 && <div className="text-slate-600 italic text-center py-4">No logs yet...</div>}
                 {logs.map((log, i) => (
                     <div key={i} className={`flex gap-2 ${log.source === 'TX' ? 'text-indigo-400' : 'text-emerald-400'}`}>
