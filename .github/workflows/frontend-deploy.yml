@@ -40,7 +40,7 @@ jobs:
           script: |
             cd ${{ secrets.EC2_PATH }}
             git pull origin master
-            cd frontend-Remix/WebController
+            cd /home/ec2-user/RealTime_Video_Streaming_and_RC_Remote_Over_the_Internet/frontend-Remix
             npm install
             npm run build
             sudo systemctl restart frontend
