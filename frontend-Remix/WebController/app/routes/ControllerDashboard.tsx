@@ -7,7 +7,7 @@ import { useHealth } from "~/uitls/HealthCheck";
 import LatencyGraph from "~/Components/LatencyGraph";
 import makeConfig_Packets from "~/uitls/makeConfig_Packets";
 // Imported Components
-import { Card, StatusBadge, MetricRow, ProgressBar, JoystickVisualizer } from "~/Components/DashboardUI";
+import { Card, StatusBadge, MetricRow, ProgressBar, JoystickVisualizer, ModeBadge } from "~/Components/DashboardUI";
 import WebTerminal from "~/Components/WebTerminal";
 import { CommandUplink, OutputLog } from "~/Components/CommandPanel";
 import ConfigDashboard from "~/Components/ConfigDashboard";
@@ -24,7 +24,7 @@ export default function ControllerDashboard() {
   /* eslint-disable react-hooks/exhaustive-deps */
   const { send, connection, reconnect, lastMessage } = useWebSocket(`ws://${WS_ENDPOINT}:8080/ws`);
   const [videoKey, setVideoKey] = useState(0);
-  const { uiState, speed, handleChange } = useButtonInput();
+  const { uiState, speed, handleChange, mode } = useButtonInput();
   const { health } = useHealth();
   const [logs, setLogs] = useState<{ time: string; msg: string; source: 'TX' | 'RX' }[]>([]);
   const [config, setConfig] = useState<ConfigState>({ P: 4.0, I: 1, D: 0.01 });
@@ -119,6 +119,7 @@ export default function ControllerDashboard() {
               <line x1="12" y1="2" x2="12" y2="12" />
             </svg>
           </button>
+          <ModeBadge mode={mode} />
           <StatusBadge
             active={connection}
             label={connection ? "WS CONNECTED" : "WS DISCONNECTED"}

@@ -27,6 +27,27 @@ export function StatusBadge({ active, label }: { active: boolean, label: string 
     );
 }
 
+// --- ModeBadge ---
+export function ModeBadge({ mode }: { mode: string }) {
+    let colors = "bg-slate-500/10 text-slate-400 border-slate-500/20"; // Manual/Default
+    let dotColor = "bg-slate-500";
+
+    if (mode === "AUTO") {
+        colors = "bg-indigo-500/10 text-indigo-400 border-indigo-500/20";
+        dotColor = "bg-indigo-500 animate-pulse";
+    } else if (mode === "SEMI-AUTO") {
+        colors = "bg-amber-500/10 text-amber-400 border-amber-500/20";
+        dotColor = "bg-amber-500";
+    }
+
+    return (
+        <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold border ${colors}`}>
+            <div className={`w-2 h-2 rounded-full ${dotColor}`} />
+            {mode}
+        </div>
+    );
+}
+
 // --- MetricRow ---
 export function MetricRow({ label, value, unit }: { label: string, value: string | number, unit?: string }) {
     return (
@@ -64,8 +85,8 @@ export function ProgressBar({ label, value, max = 2000, min = 1000, color = "bg-
 export function JoystickVisualizer({ x, y }: { x: number, y: number }) {
     // Map 1000-2000 to -1 to 1
     const map = (v: number) => ((v - 1500) / 500);
-    const xPos = map(x) * 40; // max 40px offset
-    const yPos = map(y) * -40; // Invert Y for screen coords
+    const xPos = map(x) * 80; // max 40px offset
+    const yPos = map(y) * -80; // Invert Y for screen coords
 
     return (
         <div className="w-40 h-40 rounded-full border border-slate-700 bg-slate-800/50 relative mx-auto flex items-center justify-center">

@@ -17,6 +17,18 @@ export default function useButtonInput() {
 
     const [speed, setSpeed] = useState(0);
 
+    // Auto Mode Ref
+    const isAutoModeRef = useRef(false);
+
+    // Calculate Mode
+    const getMode = () => {
+        if (isAutoModeRef.current) return "AUTO";
+        if (aux2Ref.current > 1500) return "SEMI-AUTO"; // 'f' key active
+        return "MANUAL";
+    };
+
+    const [mode, setMode] = useState("MANUAL");
+
     // 2. Wrap in useCallback or update logic to avoid stale closures
     const updateUiState = useCallback(() => {
         setUiState({
@@ -25,15 +37,30 @@ export default function useButtonInput() {
             aux1: aux1Ref.current,
             aux2: aux2Ref.current,
         });
+        setMode(getMode());
     }, []);
 
-    const handleKeyDown = useCallback((e) => {
+    const handleKeyDown = useCallback((e: KeyboardEvent) => {
+        // Prevent default browser search behavior for 'f' if needed, but 'a' is safe usually.
+        // If the user is typing in an input field, this might trigger. 
+        // We assume global control flavor.
+
         switch (e.key) {
+            case 'a':
+                isAutoModeRef.current = !isAutoModeRef.current;
+                if (isAutoModeRef.current) {
+                    throttleRef.current = 1500 - speedRef.current;
+                    aux2Ref.current = 2000;
+                } else {
+                    throttleRef.current = 1500;
+                    aux2Ref.current = 1000;
+                }
+                break;
             case 'ArrowDown':
-                throttleRef.current = 1500 + speedRef.current;
+                if (!isAutoModeRef.current) throttleRef.current = 1500 + speedRef.current;
                 break;
             case 'ArrowUp':
-                throttleRef.current = 1500 - speedRef.current;
+                if (!isAutoModeRef.current) throttleRef.current = 1500 - speedRef.current;
                 break;
             case 'ArrowRight':
                 rollRef.current = 1500 - speedRef.current;
@@ -53,9 +80,9 @@ export default function useButtonInput() {
         updateUiState();
     }, [updateUiState]);
 
-    const handleKeyUp = useCallback((e) => {
+    const handleKeyUp = useCallback((e: KeyboardEvent) => {
         if (['ArrowUp', 'ArrowDown'].includes(e.key)) {
-            throttleRef.current = 1500;
+            if (!isAutoModeRef.current) throttleRef.current = 1500;
         }
         if (['ArrowLeft', 'ArrowRight'].includes(e.key)) {
             rollRef.current = 1500;
@@ -66,10 +93,15 @@ export default function useButtonInput() {
         updateUiState();
     }, [updateUiState]);
 
-    const handleChange = (e) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newSpeed = Number(e.target.value);
         setSpeed(newSpeed);
         speedRef.current = newSpeed;
+
+        if (isAutoModeRef.current) {
+            throttleRef.current = 1500 + newSpeed;
+            updateUiState();
+        }
     };
 
     useEffect(() => {
@@ -83,5 +115,5 @@ export default function useButtonInput() {
     }, [handleKeyDown, handleKeyUp]); // 3. Add dependencies here
 
     // 4. Return the data so your component can use it
-    return { uiState, speed, handleChange };
+    return { uiState, speed, handleChange, mode };
 };
