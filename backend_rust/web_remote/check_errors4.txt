@@ -1,0 +1,174 @@
+﻿cargo :     Checking 
+web_remote v0.1.0 (C:
+\Users\DELL\Desktop\p
+ython\RealTime_Video_
+Streaming_and_RC_Remo
+te_Over_the_Internet\
+backend_rust\web_remo
+te)
+At line:1 char:1
++ cargo check 2>&1 | 
+Out-File -FilePath 
+check_errors4.txt 
+-Encoding utf ...
++ ~~~~~~~~~~~~~~~~
+    + CategoryInfo   
+           : NotSpe  
+  cified: (    Che   
+ cking we...ust\w    
+eb_remote):Strin    
+g) [], RemoteExc    
+eption
+    + FullyQualified 
+   ErrorId : Native  
+  CommandError
+ 
+error[E0277]: the 
+trait bound `Router: 
+From<Router<AppState>
+>` is not satisfied
+   --> 
+src\api\mod.rs:12:16
+    |
+ 12 |         .merge(
+health::routes())
+    |          ----- 
+^^^^^^^^^^^^^^^^ the 
+trait `From<Router<Ap
+pState>>` is not 
+implemented for 
+`Router`
+    |          |
+    |          
+required by a bound 
+introduced by this 
+call
+    |
+    = note: required 
+for 
+`Router<AppState>` 
+to implement 
+`Into<Router>`
+note: required by a 
+bound in 
+`Router::<S>::merge`
+   --> C:\Users\DELL\
+.cargo\registry\src\i
+ndex.crates.io-1949cf
+8c6b5b557f\axum-0.7.9
+\src\routing\mod.rs:2
+32:12
+    |
+230 |     pub fn 
+merge<R>(self, 
+other: R) -> Self
+    |            
+----- required by a 
+bound in this 
+associated function
+231 |     where
+232 |         R: 
+Into<Router<S>>,
+    |            
+^^^^^^^^^^^^^^^ 
+required by this 
+bound in 
+`Router::<S>::merge`
+
+error[E0277]: the 
+trait bound `Router: 
+From<Router<AppState>
+>` is not satisfied
+   --> 
+src\api\mod.rs:13:16
+    |
+ 13 |         
+.merge(ws::routes())
+    |          ----- 
+^^^^^^^^^^^^ the 
+trait `From<Router<Ap
+pState>>` is not 
+implemented for 
+`Router`
+    |          |
+    |          
+required by a bound 
+introduced by this 
+call
+    |
+    = note: required 
+for 
+`Router<AppState>` 
+to implement 
+`Into<Router>`
+note: required by a 
+bound in 
+`Router::<S>::merge`
+   --> C:\Users\DELL\
+.cargo\registry\src\i
+ndex.crates.io-1949cf
+8c6b5b557f\axum-0.7.9
+\src\routing\mod.rs:2
+32:12
+    |
+230 |     pub fn 
+merge<R>(self, 
+other: R) -> Self
+    |            
+----- required by a 
+bound in this 
+associated function
+231 |     where
+232 |         R: 
+Into<Router<S>>,
+    |            
+^^^^^^^^^^^^^^^ 
+required by this 
+bound in 
+`Router::<S>::merge`
+
+error[E0308]: 
+mismatched types
+   --> 
+src\api\mod.rs:14:21
+    |
+ 14 |         
+.with_state(state)
+    |          
+---------- ^^^^^ 
+expected `()`, found 
+`AppState`
+    |          |
+    |          
+arguments to this 
+method are incorrect
+    |
+note: method defined 
+here
+   --> C:\Users\DELL\
+.cargo\registry\src\i
+ndex.crates.io-1949cf
+8c6b5b557f\axum-0.7.9
+\src\routing\mod.rs:3
+70:12
+    |
+370 |     pub fn 
+with_state<S2>(self, 
+state: S) -> 
+Router<S2> {
+    |            
+^^^^^^^^^^
+
+Some errors have 
+detailed 
+explanations: E0277, 
+E0308.
+For more information 
+about an error, try 
+`rustc --explain 
+E0277`.
+error: could not 
+compile `web_remote` 
+(bin "web_remote") 
+due to 3 previous 
+errors

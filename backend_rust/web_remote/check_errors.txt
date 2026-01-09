@@ -1,0 +1,329 @@
+﻿cargo :     Checking 
+web_remote v0.1.0 (C:
+\Users\DELL\Desktop\p
+ython\RealTime_Video_
+Streaming_and_RC_Remo
+te_Over_the_Internet\
+backend_rust\web_remo
+te)
+At line:1 char:1
++ cargo check 2>&1 | 
+Out-File -FilePath 
+check_errors.txt 
+-Encoding utf8
++ ~~~~~~~~~~~~~~~~
+    + CategoryInfo   
+           : NotSpe  
+  cified: (    Che   
+ cking we...ust\w    
+eb_remote):Strin    
+g) [], RemoteExc    
+eption
+    + FullyQualified 
+   ErrorId : Native  
+  CommandError
+ 
+error[E0432]: 
+unresolved import 
+`axum::extract::ws`
+  --> src\app.rs:6:20
+   |
+ 6 | use axum::extrac
+t::ws::Message;
+   |                 
+   ^^ could not find 
+`ws` in `extract`
+   |
+note: found an item 
+that was configured 
+out
+  --> C:\Users\DELL\.
+cargo\registry\src\in
+dex.crates.io-1949cf8
+c6b5b557f\axum-0.7.9\
+src\extract\mod.rs:11
+:9
+   |
+10 | #[cfg(feature = 
+"ws")]
+   |       
+-------------- the 
+item is gated behind 
+the `ws` feature
+11 | pub mod ws;
+   |         ^^
+
+error[E0432]: 
+unresolved imports 
+`axum::extract::ws`, 
+`axum::extract::WebSo
+cketUpgrade`
+  --> 
+src\api\ws.rs:3:9
+   |
+ 3 |         
+ws::{Message, 
+WebSocket},
+   |         ^^ 
+could not find `ws` 
+in `extract`
+ 4 |         State, 
+WebSocketUpgrade,
+   |                
+^^^^^^^^^^^^^^^^ no 
+`WebSocketUpgrade` 
+in `extract`
+   |
+note: found an item 
+that was configured 
+out
+  --> C:\Users\DELL\.
+cargo\registry\src\in
+dex.crates.io-1949cf8
+c6b5b557f\axum-0.7.9\
+src\extract\mod.rs:11
+:9
+   |
+10 | #[cfg(feature = 
+"ws")]
+   |       
+-------------- the 
+item is gated behind 
+the `ws` feature
+11 | pub mod ws;
+   |         ^^
+note: found an item 
+that was configured 
+out
+  --> C:\Users\DELL\.
+cargo\registry\src\in
+dex.crates.io-1949cf8
+c6b5b557f\axum-0.7.9\
+src\extract\mod.rs:79
+:19
+   |
+77 | #[cfg(feature = 
+"ws")]
+   |       
+-------------- the 
+item is gated behind 
+the `ws` feature
+78 | #[doc(inline)]
+79 | pub use self::ws
+::WebSocketUpgrade;
+   |                 
+  ^^^^^^^^^^^^^^^^
+
+error[E0432]: 
+unresolved import `fu
+tures_util::SinkExt`
+   --> 
+src\api\ws.rs:10:20
+    |
+ 10 | use futures_uti
+l::{SinkExt, 
+StreamExt};
+    |                
+    ^^^^^^^ no 
+`SinkExt` in the root
+    |
+note: found an item 
+that was configured 
+out
+   --> C:\Users\DELL\
+.cargo\registry\src\i
+ndex.crates.io-1949cf
+8c6b5b557f\futures-ut
+il-0.3.31\src\lib.rs:
+302:29
+    |
+300 | #[cfg(feature 
+= "sink")]
+    |       
+---------------- the 
+item is gated behind 
+the `sink` feature
+301 | 
+#[doc(no_inline)]
+302 | pub use 
+crate::sink::{Sink, 
+SinkExt};
+    |                
+             ^^^^^^^
+
+error[E0432]: 
+unresolved import 
+`axum::extract::ws`
+  --> 
+src\api\mod.rs:8:20
+   |
+ 8 | use axum::extrac
+t::ws::Message;
+   |                 
+   ^^ could not find 
+`ws` in `extract`
+   |
+note: found an item 
+that was configured 
+out
+  --> C:\Users\DELL\.
+cargo\registry\src\in
+dex.crates.io-1949cf8
+c6b5b557f\axum-0.7.9\
+src\extract\mod.rs:11
+:9
+   |
+10 | #[cfg(feature = 
+"ws")]
+   |       
+-------------- the 
+item is gated behind 
+the `ws` feature
+11 | pub mod ws;
+   |         ^^
+
+error[E0282]: type 
+annotations needed
+  --> 
+src\api\ws.rs:39:16
+   |
+39 |             if w
+s_sender.send(msg).aw
+ait.is_err() {
+   |                
+^^^^^^^^^ cannot 
+infer type
+
+error[E0282]: type 
+annotations needed
+  --> 
+src\api\ws.rs:39:16
+   |
+39 |             if w
+s_sender.send(msg).aw
+ait.is_err() {
+   |                ^
+^^^^^^^^^^^^^^^^^^^^^
+^^^ cannot infer type
+
+error[E0282]: type 
+annotations needed
+  --> 
+src\api\ws.rs:67:35
+   |
+67 |         while 
+let Some(Ok(msg)) = w
+s_receiver.next().awa
+it {
+   |                 
+                  
+^^^^^^^^^^^ cannot 
+infer type
+
+error[E0277]: the 
+trait bound 
+`fn({type error}, 
+State<...>) -> ... 
+{ws_handler}: 
+Handler<_, _>` is 
+not satisfied
+   --> 
+src\api\ws.rs:17:27
+    |
+ 17 |         
+.route("/ws", 
+get(ws_handler))
+    |                
+       --- 
+^^^^^^^^^^ the trait 
+`Handler<_, _>` is 
+not implemented for 
+fn item `fn({type 
+error}, State<Arc<Sen
+der<...>, ...>>) -> 
+... {ws_handler}`
+    |                
+       |
+    |                
+       required by a 
+bound introduced by 
+this call
+    |
+    = note: Consider 
+using `#[axum::debug_
+handler]` to improve 
+the error message
+    = help: the 
+following other 
+types implement 
+trait `Handler<T, 
+S>`:
+              
+`Layered<L, H, T, 
+S>` implements 
+`Handler<T, S>`
+              
+`MethodRouter<S>` 
+implements 
+`Handler<(), S>`
+note: required by a 
+bound in 
+`axum::routing::get`
+   --> C:\Users\DELL\
+.cargo\registry\src\i
+ndex.crates.io-1949cf
+8c6b5b557f\axum-0.7.9
+\src\routing\method_r
+outing.rs:439:1
+    |
+439 | top_level_handl
+er_fn!(get, GET);
+    | ^^^^^^^^^^^^^^^
+^^^^^^^---^^^^^^
+    | |              
+       |
+    | |              
+       required by a 
+bound in this 
+function
+    | required by 
+this bound in `get`
+    = note: the full 
+name for the type 
+has been written to '
+C:\Users\DELL\Desktop
+\python\RealTime_Vide
+o_Streaming_and_RC_Re
+mote_Over_the_Interne
+t\backend_rust\web_re
+mote\target\debug\dep
+s\web_remote-ecafbefd
+13de4a9e.long-type-56
+86294561705498928.txt
+'
+    = note: consider 
+using `--verbose` to 
+print the full type 
+name to the console
+    = note: this 
+error originates in 
+the macro `top_level_
+handler_fn` (in 
+Nightly builds, run 
+with -Z 
+macro-backtrace for 
+more info)
+
+Some errors have 
+detailed 
+explanations: E0277, 
+E0282, E0432.
+For more information 
+about an error, try 
+`rustc --explain 
+E0277`.
+error: could not 
+compile `web_remote` 
+(bin "web_remote") 
+due to 8 previous 
+errors

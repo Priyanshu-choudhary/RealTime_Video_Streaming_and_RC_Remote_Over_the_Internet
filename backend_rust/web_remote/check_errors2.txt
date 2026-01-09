@@ -1,0 +1,29 @@
+﻿cargo :     Checking 
+web_remote v0.1.0 (C:
+\Users\DELL\Desktop\p
+ython\RealTime_Video_
+Streaming_and_RC_Remo
+te_Over_the_Internet\
+backend_rust\web_remo
+te)
+At line:1 char:1
++ cargo check 2>&1 | 
+Out-File -FilePath 
+check_errors2.txt 
+-Encoding utf ...
++ ~~~~~~~~~~~~~~~~
+    + CategoryInfo   
+           : NotSpe  
+  cified: (    Che   
+ cking we...ust\w    
+eb_remote):Strin    
+g) [], RemoteExc    
+eption
+    + FullyQualified 
+   ErrorId : Native  
+  CommandError
+ 
+    Finished `dev` 
+profile [unoptimized 
++ debuginfo] 
+target(s) in 0.70s

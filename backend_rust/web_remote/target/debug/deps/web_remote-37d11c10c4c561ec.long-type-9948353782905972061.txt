@@ -1,0 +1,4 @@
+fn() -> Json<String> {hello}
+fn() -> Json<String> {hello}: Handler<_, _>
+Layered<L, H, T, S>
+MethodRouter<S>

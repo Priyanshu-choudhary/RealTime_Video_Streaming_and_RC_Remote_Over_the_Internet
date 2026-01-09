@@ -1,0 +1,22 @@
+﻿cargo :     Finished 
+`dev` profile 
+[unoptimized + 
+debuginfo] target(s) 
+in 0.31s
+At line:1 char:1
++ cargo check 2>&1 | 
+Out-File -FilePath 
+check_errors5.txt 
+-Encoding utf ...
++ ~~~~~~~~~~~~~~~~
+    + CategoryInfo   
+           : NotSpe  
+  cified: (    Fin   
+ ished `d...get(s    
+) in 0.31s:Strin    
+g) [], RemoteExc    
+eption
+    + FullyQualified 
+   ErrorId : Native  
+  CommandError
+ 

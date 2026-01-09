@@ -1,0 +1,2 @@
+fn({type error}, State<Arc<tokio::sync::broadcast::Sender<{type error}>, {type error}>>) -> impl futures_util::Future<Output = impl IntoResponse> {ws_handler}
+fn({type error}, State<Arc<tokio::sync::broadcast::Sender<{type error}>, {type error}>>) -> impl futures_util::Future<Output = impl IntoResponse> {ws_handler}: Handler<_, _>
