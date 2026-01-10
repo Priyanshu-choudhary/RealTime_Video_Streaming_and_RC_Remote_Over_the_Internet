@@ -30,7 +30,7 @@ export default function ControllerDashboard() {
   const [config, setConfig] = useState<ConfigState>({ P: 4.0, I: 1, D: 0.01 });
 
   // Logic for Vehicle Offline
-  const lastBeat = Math.floor((Date.now() - (health?.lastMessageTime || Date.now())) / 1000);
+  const lastBeat = Math.floor((Date.now() - (health?.last_message_time || Date.now())) / 1000);
   const isVehicleOffline = lastBeat > 5;
 
   const [isTerminalMode, setIsTerminalMode] = useState(false);
@@ -126,9 +126,9 @@ export default function ControllerDashboard() {
           />
 
           <StatusBadge
-            active={!isVehicleOffline && health?.containerStatus === "RUNNING"}
+            active={!isVehicleOffline && health?.container_status === "RUNNING"}
             label={
-              !isVehicleOffline && health?.containerStatus === "RUNNING"
+              !isVehicleOffline && health?.container_status === "RUNNING"
                 ? "VEHICLE CONNECTED"
                 : "VEHICLE OFFLINE"
             }
@@ -249,8 +249,8 @@ export default function ControllerDashboard() {
         {/* RIGHT COLUMN: DIAGNOSTICS */}
         <div className="lg:col-span-2 space-y-6">
           <Card title="System Health">
-            <MetricRow label="Status" value={isVehicleOffline ? "OFFLINE" : health?.containerStatus || "N/A"} />
-            <MetricRow label="Uptime" value={health?.upTime || 0} unit="s" />
+            <MetricRow label="Status" value={isVehicleOffline ? "OFFLINE" : health?.container_status || "N/A"} />
+            <MetricRow label="up_time" value={health?.up_time || 0} unit="s" />
             <MetricRow label="Last Beat" value={lastBeat} unit="s ago" />
 
 

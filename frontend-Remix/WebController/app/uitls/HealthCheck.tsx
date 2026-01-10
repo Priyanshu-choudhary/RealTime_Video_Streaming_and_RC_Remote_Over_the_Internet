@@ -4,9 +4,9 @@ import { useState, useEffect } from "react";
 export interface HealthData {
     connected?: string;
     latency?: number;
-    containerStatus?: string;
-    lastMessageTime?: number;
-    upTime?: number;
+    container_status?: string;
+    last_message_time?: number;
+    up_time?: number;
 }
 
 export function useHealth() {
