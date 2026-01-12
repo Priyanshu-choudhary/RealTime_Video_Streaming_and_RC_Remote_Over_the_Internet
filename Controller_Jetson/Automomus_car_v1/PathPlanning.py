@@ -21,6 +21,7 @@ def calculate_steering_error(center_bottom, target_point):
 
 
 def path_planning_thread(frame_queue, shared_angle, shared_seq, stop_event, state_lock, shared_state):
+    smoothed_angle = 0.0
     while not stop_event.is_set():
         try:
             frame, mask = frame_queue.get(timeout=0.1)
@@ -46,10 +47,13 @@ def path_planning_thread(frame_queue, shared_angle, shared_seq, stop_event, stat
             target_p
         )
 
-        shared_angle.value = float(angle)
+        # EMA Filter
+        smoothed_angle = (config.EMA_ALPHA * angle) + ((1 - config.EMA_ALPHA) * smoothed_angle)
+
+        shared_angle.value = float(smoothed_angle)
         shared_seq.value += 1
         with state_lock:
-            shared_state["angle"] = angle
+            shared_state["angle"] = smoothed_angle
             shared_state["center_points"] = center_points
             shared_state["vp_y"] = vp_y
 
