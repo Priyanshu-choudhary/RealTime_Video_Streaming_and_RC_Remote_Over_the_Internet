@@ -12,6 +12,8 @@ dist/
 build/
 target/
 
+__pycache__/
+
 # OS
 .DS_Store
 Thumbs.db
