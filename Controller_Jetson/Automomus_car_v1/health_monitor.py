@@ -4,12 +4,13 @@ import aiohttp
 import time
 
 class HealthMonitor:
-    def __init__(self, endpoint_url, interval=1.0):
+    def __init__(self, endpoint_url, interval=1.0,loop=None):
         self.url = endpoint_url
         self.interval = interval
         self.last_report_time = 0
         self.container_status = "RUNNING"
         self._session = None
+        self.loop = loop
 
     
     async def _get_session(self):
@@ -19,6 +20,7 @@ class HealthMonitor:
         return self._session
 
     async def _send_post(self, latency,lastMessageTime):
+        
         """The actual background POST request."""
         payload = {
             "latency": int(latency),
@@ -30,6 +32,7 @@ class HealthMonitor:
         try:
             session = await self._get_session()
             async with session.post(self.url, json=payload, timeout=1.0) as response:
+               
                 if response.status != 200:
                     print(f"⚠️ Health Monitor Error: {response.status}")
         except Exception as e:
