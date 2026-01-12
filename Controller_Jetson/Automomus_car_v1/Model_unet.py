@@ -93,14 +93,14 @@ class TensorRTUnetSegmentor:
 
     def _preprocess2(self, frame):
         # 1. Resize and Convert BGR to RGB
-       input_frame = cv2.resize(frame, (self.MODEL_INPUT_W, self.MODEL_INPUT_H))
-       input_frame = cv2.cvtColor(input_frame, cv2.COLOR_BGR2RGB)
+        input_frame = cv2.resize(frame, (self.MODEL_INPUT_W, self.MODEL_INPUT_H))
+        input_frame = cv2.cvtColor(input_frame, cv2.COLOR_BGR2RGB)
 
         # 2. MATCH PYTORCH NORMALIZATION (The Missing Step)
-       input_data = input_frame.astype(np.float32) / 255.0
-       mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
-       std = np.array([0.229, 0.224, 0.225], dtype=np.float32)
-       input_data = (input_data - mean) / std # This is what albumentations does
+        input_data = input_frame.astype(np.float32) / 255.0
+        mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
+        std = np.array([0.229, 0.224, 0.225], dtype=np.float32)
+        input_data = (input_data - mean) / std # This is what albumentations does
         
         # 3. HWC to CHW
         input_data = input_data.transpose((2, 0, 1))
