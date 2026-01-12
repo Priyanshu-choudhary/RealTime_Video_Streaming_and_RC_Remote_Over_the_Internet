@@ -110,7 +110,7 @@ async def main(shared_angle, shared_seq):
                 motor_serial.stop()
             else:
                 # Mix throttle/roll into motor commands
-                direction, pwm1, pwm2 = RCMixer.compute_motor_commands(throttle, roll, aux1)
+                direction, pwm1, pwm2 = RCMixer.compute_motor_commands(roll, throttle, aux1)
                 motor_serial.send_motor_command(direction, pwm1, pwm2)
 
             health.update(int(latency), int(last_valid_packet_local_time * 1000))

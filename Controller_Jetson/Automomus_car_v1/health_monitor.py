@@ -22,8 +22,10 @@ class HealthMonitor:
         """The actual background POST request."""
         payload = {
             "latency": int(latency),
-            "lastMessageTime": lastMessageTime,
-            "containerStatus": self.container_status,
+            "last_message_time": lastMessageTime,
+            "container_status": self.container_status,
+            "connected": True,
+            "up_time": int(time.time()), 
         }
         try:
             session = await self._get_session()

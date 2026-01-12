@@ -113,7 +113,7 @@ def process_camera_stream(shared_angle, shared_seq):
         # Pick a target point from the detected line (e.g., the second point found)
         # Choosing a point higher up (e.g., center_points[2]) gives the PID 
         # a "look-ahead" distance which makes the car more stable at speed.
-        target_p = center_points[0] 
+        target_p = center_points[1] 
 
         # Calculate error: Positive = Right, Negative = Left
         angle = calculate_steering_error((car_center_x, car_bottom_y), target_p)
@@ -144,7 +144,7 @@ def process_camera_stream(shared_angle, shared_seq):
                 cv2.circle(output, p, 4, (255, 0, 0), -1)
 
             # ---- draw predicted path ----
-            cv2.line(output, center, center_points[0], (0, 0, 0), 2)
+            cv2.line(output, center, center_points[1], (0, 0, 0), 2)
 
             # ---- draw angle text ----
             cv2.putText(

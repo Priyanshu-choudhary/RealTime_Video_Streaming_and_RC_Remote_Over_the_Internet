@@ -62,8 +62,8 @@ async def main():
 
                 # 2. Logic: Only process if latency is under 1 second
                 if latency < 1000:
-                    throttle = data.get("Pitch", 1500)
-                    roll     = data.get("Roll", 1500)
+                    throttle = data.get("Roll", 1500)
+                    roll     = data.get("Pitch", 1500)
                     aux1     = data.get("Aux1", 1500)
                     direction, pwm1, pwm2 = RCMixer.compute_motor_commands(throttle, roll, aux1)
                     motor_serial.send_motor_command(direction, pwm1, pwm2)
