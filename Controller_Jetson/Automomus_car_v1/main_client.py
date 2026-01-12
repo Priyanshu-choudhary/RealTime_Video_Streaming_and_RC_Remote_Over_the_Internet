@@ -8,29 +8,30 @@ from rc_mixer import RCMixer
 from health_monitor import HealthMonitor
 from PID_Controll import PID
 
-# Configuration
-WS_URI = "ws://yadiec2.freedynamicdns.net:8080/ws"
-HEALTH_URL = "http://yadiec2.freedynamicdns.net:8080/health"
-SERIAL_PORT = "/dev/ttyUSB0"
-BAUD_RATE = 115200
-MODE = "MANUAL"
+import config
 
-AUTO_MODE_TRIGGER = 1700    # If Aux1 > 1700, switch to AUTO
+# Configuration is now imported from config.py
 
 
 async def main(shared_angle, shared_seq):
-    motor_serial = SerialSender(port=SERIAL_PORT, baudrate=BAUD_RATE)
+    motor_serial = SerialSender(port=config.SERIAL_PORT, baudrate=config.BAUD_RATE)
     if not motor_serial.open_serial():
         print("❌ Failed to open serial port. Exiting.")
         sys.exit(1)
 
-    health = HealthMonitor(endpoint_url=HEALTH_URL, interval=2.0)
-    client = RCDataDecoder(ws_uri=WS_URI)
+    health = HealthMonitor(endpoint_url=config.HEALTH_URL, interval=config.HEALTH_CHECK_INTERVAL)
+    client = RCDataDecoder(ws_uri=config.WS_URI)
     asyncio.ensure_future(client.run_receiver())
 
     # Initialize the PID Controller once
     # pid = SteeringPID(kp=1.2, ki=0.01, kd=0.05)
-    steering_pid = PID(kp=5, ki=0.1, kd=0.1, setpoint=0)
+    steering_pid = PID(
+        kp=config.PID_KP, 
+        ki=config.PID_KI, 
+        kd=config.PID_KD, 
+        setpoint=config.PID_SETPOINT, 
+        output_limits=config.PID_OUTPUT_LIMITS
+    )
     last_processed_timestamp = -1
     last_valid_packet_local_time = time.time()
     clock_offset = None
@@ -83,7 +84,7 @@ async def main(shared_angle, shared_seq):
             
             aux1 = data.get("Aux1", 1000) if data else 1000
             # print(aux1)
-            if aux1 < AUTO_MODE_TRIGGER:
+            if aux1 < config.AUTO_MODE_TRIGGER:
                 # --- MANUAL MODE ---
                 throttle = data.get("Pitch", 1500) if data else 1500
                 roll = data.get("Roll", 1500) if data else 1500

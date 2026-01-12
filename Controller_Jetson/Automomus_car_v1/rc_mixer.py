@@ -1,11 +1,13 @@
+import config
+
 class RCMixer:
     # Assuming RCMixer class constants are defined
-    RC_MIN = 1000
-    RC_MAX = 2000
-    RC_CENTER = 1500
-    RC_DEADBAND = 20
-    MAX_PWM_OUTPUT = 255
-    MAX_CORRECTION_PWM  = 30 
+    RC_MIN = config.RC_MIN
+    RC_MAX = config.RC_MAX
+    RC_CENTER = config.RC_CENTER
+    RC_DEADBAND = config.RC_DEADBAND
+    MAX_PWM_OUTPUT = config.MAX_PWM_OUTPUT
+    MAX_CORRECTION_PWM  = config.MAX_CORRECTION_PWM 
 
     @staticmethod
     #If value is below min_val, it returns min_val , If value is above max_val, it returns max_val , other wise unchanged
