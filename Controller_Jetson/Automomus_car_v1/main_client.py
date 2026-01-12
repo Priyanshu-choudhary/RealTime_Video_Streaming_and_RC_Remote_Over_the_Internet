@@ -7,7 +7,7 @@ from RCDataDecoder import RCDataDecoder
 from rc_mixer import RCMixer
 from health_monitor import HealthMonitor
 from PID_Controll import PID
-
+import TelemetryOutput
 import config
 
 # Configuration is now imported from config.py
@@ -104,6 +104,7 @@ async def main(shared_angle, shared_seq):
 
                 # Apply PID to roll (steering)
                 roll = 1500 + correction
+                TelemetryOutput.send(f"{current_error} , {correction} , {throttle} , {roll}", 0.1)
             
             # --- SAFETY & MIXING ---
             # If we haven't seen web data in 1 second, safety stop

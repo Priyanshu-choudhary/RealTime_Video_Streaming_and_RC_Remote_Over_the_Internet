@@ -4,6 +4,7 @@ import struct
 import time
 from typing import Dict, Any
 from tinytlvx import TinyTLVRx, TTP_FRAME_TYPE_RC, TTP_FRAME_TYPE_CONFIG
+import TelemetryOutput
 
 # Define channel names and PID parameters
 RC_CHANNELS = {
@@ -103,8 +104,13 @@ class RCDataDecoder:
                 async with websockets.connect(self.ws_uri) as websocket:
                     print(f"🔗 Connected to {self.ws_uri}")
                     self.rx.reset()
-                    while True:
-                        message = await websocket.recv()
+                    
+                    # Create Sender Task
+                    sender_task = asyncio.create_task(self.sender_loop(websocket))
+                    
+                    try:
+                        while True:
+                            message = await websocket.recv()
                         
                         # Capture exact arrival time
                         arrival_ts = int(time.time() * 1000) & 0xFFFFFFFF 
@@ -121,8 +127,25 @@ class RCDataDecoder:
                                     self.latest_data = new_data
                                     
             except (websockets.exceptions.ConnectionClosed, ConnectionRefusedError):
+                if 'sender_task' in locals(): sender_task.cancel()
                 print("⚠️ Connection lost. Retrying in 2s...")
                 await asyncio.sleep(2)
             except Exception as e:
+                if 'sender_task' in locals(): sender_task.cancel()
                 print(f"[ERROR] {e}")
                 await asyncio.sleep(2)
+
+    async def sender_loop(self, websocket):
+        """Reads from TelemetryOutput queue and sends via websocket."""
+        q = TelemetryOutput.get_queue()
+        while True:
+            try:
+                # Non-blocking check
+                if not q.empty():
+                    msg = q.get_nowait()
+                    await websocket.send(msg)
+                else:
+                    await asyncio.sleep(0.05) # Yield to avoid hogging CPU
+            except Exception as e:
+                print(f"Telemetry Send Error: {e}")
+                await asyncio.sleep(1)
