@@ -2,7 +2,7 @@ import numpy as np
 import tensorrt as trt
 import pycuda.driver as cuda
 import pycuda.autoinit # This initializes CUDA context
-
+import config
 # Must import cv2 because it is used for resizing and color conversion
 import cv2 
 
@@ -138,8 +138,12 @@ class TensorRTUnetSegmentor:
 
     def infer(self, frame):
         """Runs the complete inference cycle and returns the segmentation mask."""
-        self._preprocess(frame)
+        if config.MODEL_PREPROCESS:
+            self._preprocess(frame)
+        else:
+            self._preprocess2(frame)
         
+       
         # Execute inference
         self.context.execute_v2(bindings=self.bindings)
         

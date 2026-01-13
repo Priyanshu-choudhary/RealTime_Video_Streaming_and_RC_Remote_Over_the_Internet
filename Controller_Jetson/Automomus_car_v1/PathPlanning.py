@@ -73,11 +73,13 @@ def overlay(frame, mask, state_lock, shared_state):
     output = cv2.addWeighted(frame, 1.0, color_mask, 0.5, 0)
 
     vp_x = config.CAMERA_WIDTH // 2
-    left_bottom  = (int(config.CAMERA_WIDTH * 0.2), config.CAMERA_HEIGHT - 10)
-    right_bottom = (int(config.CAMERA_WIDTH * 0.8), config.CAMERA_HEIGHT - 10)
+    left_bottom  = (int(config.CAMERA_WIDTH * 0.3), config.CAMERA_HEIGHT )
+    right_bottom = (int(config.CAMERA_WIDTH * 0.7), config.CAMERA_HEIGHT)
 
-    cv2.line(output, left_bottom, (vp_x, vp_y), (0, 255, 0), 2)
-    cv2.line(output, right_bottom, (vp_x, vp_y), (0, 255, 0), 2)
+    #cv2.line(image, pt1, pt2, color, thickness, lineType)
+    # print(left_bottom)
+    cv2.line(output, left_bottom, (580, 400), (0, 255, 0), 2)
+    cv2.line(output, right_bottom, (700, 400), (0, 255, 0), 2)
 
     for p in center_points:
         cv2.circle(output, p, 4, (255, 0, 0), -1)

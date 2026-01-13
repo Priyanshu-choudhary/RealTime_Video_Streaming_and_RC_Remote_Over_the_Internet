@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import serial
 import time
+import struct
 
 class SerialSender:
     def __init__(self, port="/dev/ttyUSB0", baudrate=115200, packet_delay=0.002):
@@ -24,7 +25,7 @@ class SerialSender:
             self.ser.reset_output_buffer()
 
             # Wait for device to be fully ready
-            time.sleep(1.0)
+            time.sleep(0.08)
 
             # Send init packet
             init_packet = bytes([0xAA, 0x00, 0x00, 0x00])
@@ -70,6 +71,40 @@ class SerialSender:
         except serial.SerialException as e:
             print(f"Error sending packet: {e}")
             return False
+    
+    def read_telemetry(self):
+        if not self.ser:
+            return None
+
+        while self.ser.in_waiting >= 1:
+            byte = self.ser.read(1)
+
+            # Look for header
+            if byte != b'\x55':
+                continue
+
+            # Wait for full payload
+            if self.ser.in_waiting < 5:
+                return None
+
+            payload = self.ser.read(5)
+            if len(payload) != 5:
+                return None
+
+            bus_raw, cur_raw, end_byte = struct.unpack('>HhB', payload)
+
+            if end_byte != 0x0A:
+                # Bad packet, resync
+                continue
+
+            voltage = ((bus_raw >> 3) * 4) / 1000.0
+            current_ma = cur_raw * 0.4
+            power_w = (voltage * current_ma) / 1000.0
+
+            return voltage, current_ma, power_w
+
+        return None
+
 
     def stop(self):
         return self.send_motor_command(0, 0, 0)

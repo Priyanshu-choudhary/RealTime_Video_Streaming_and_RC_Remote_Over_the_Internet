@@ -9,6 +9,7 @@ HEALTH_URL = "http://yadiec2.freedynamicdns.net:8080/health"
 SERIAL_PORT = "/dev/ttyUSB0"
 BAUD_RATE = 115200
 
+RUN_VISION_PROCESS =False
 # ===========================
 # SYSTEM MODES & HEALTH
 # ===========================
@@ -37,7 +38,7 @@ USE_OVERLAY = True
 ENGINE_FILE_PATH = "unet_mobilenetv2_Marbel.engine"
 MODEL_INPUT_H = 384
 MODEL_INPUT_W = 384
-
+MODEL_PREPROCESS = True  #True= marbel model preprocesss , False for road model preprocess function
 # ===========================
 # AV STREAMING (GSTREAMER)
 # ===========================
@@ -65,7 +66,7 @@ FRAME_DURATION = int(1e9 / CAMERA_FPS)
 LOOK_AHEAD = 1  # Number of points to look ahead for steering
 EMA_ALPHA = 0.7 # Exponential Moving Average Filter (0.1 - 1.0) 1.0 = No Filter
 EMA_ALPHA_ERROR = 0.7        # small → clean vision noise
-EMA_ALPHA_CORRECTION = 0.7   # smaller → smoother motors
+EMA_ALPHA_CORRECTION = 0.6   # smaller → smoother motors
 
 # ===========================
 # RC MIXER & MOTOR CONTROL
@@ -77,3 +78,5 @@ RC_DEADBAND = 10
 
 MAX_PWM_OUTPUT = 175
 MAX_CORRECTION_PWM = 30
+
+MOTOR_OFFSET_CORRECT=1520

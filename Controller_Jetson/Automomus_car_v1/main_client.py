@@ -77,7 +77,18 @@ async def main(shared_angle, shared_seq, loop):
 
             if not data:
                 continue
-
+             # ------------------ Read voltage and current from motor ------------------
+            try:
+                tele_data = motor_serial.read_telemetry()
+                if tele_data is None:
+                    continue   # No more full packets in the buffer
+                
+                v, i, p = tele_data
+                # status = "Charging" if i < 0 else "Discharging"
+                # # Logic for health monitor or logging
+                # print(f"[{status}] {v:.2f}V | {i:.1f}mA")
+            except Exception as e:
+                print(f"Telemetry Read Error: {e}")
             # ------------------ LATENCY ------------------
             packet_ts = data.get("timestamp")
             if packet_ts is not None:
@@ -110,6 +121,9 @@ async def main(shared_angle, shared_seq, loop):
                 throttle = data.get("Pitch", 1500)
                 roll = data.get("Roll", 1500)
                 # print(data)
+                json_string = f'{{"motorTelemetry": {{"V": {v:.2f}, "I": {i:.2f}, "P": {p:.2f}}}}}'
+
+                TelemetryOutput.send(json_string, 0.1)   
             else:
                 # AUTO
                 raw_error = float(shared_angle.value)
@@ -147,7 +161,7 @@ async def main(shared_angle, shared_seq, loop):
 
 
                 # build a output telemetry JSON
-                json_string = f'{{"error":{filtered_error},"correction":{ema_correction},"throttle":{throttle} }}'
+                json_string = f'{{"error":{filtered_error},"correction":{ema_correction},"throttle":{throttle} ,"V": {v} ,"I": {i},"P":{p} }}'
 
                 TelemetryOutput.send(json_string, 0.2)
 
@@ -156,7 +170,7 @@ async def main(shared_angle, shared_seq, loop):
                 motor_serial.stop()
             else:
                 direction, pwm1, pwm2 = RCMixer.compute_motor_commands(
-                    roll, throttle, aux1
+                    roll, throttle, config.MOTOR_OFFSET_CORRECT
                 )
                 motor_serial.send_motor_command(direction, pwm1, pwm2)
 
@@ -164,9 +178,17 @@ async def main(shared_angle, shared_seq, loop):
         print("🛑 Shutting down...")
 
     finally:
+        print("Cleaning up tasks...")
+
         ws_task.cancel()
+        try:
+            await ws_task
+        except asyncio.CancelledError:
+            pass
+
         motor_serial.stop()
         motor_serial.close_serial()
+
         await health.close()
 
 
