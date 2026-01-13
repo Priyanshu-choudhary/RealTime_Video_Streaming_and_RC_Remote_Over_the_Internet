@@ -140,7 +140,7 @@ def process_camera_stream(shared_angle, shared_seq):
         mask = segmentor.infer(frame)
         if frame_queue.empty():
             frame_queue.put((frame.copy(), mask))
-        # path_planning(shared_angle, shared_seq)
+       
         
         # ---------- 4. Choose frame to stream ----------
         if USE_OVERLAY:

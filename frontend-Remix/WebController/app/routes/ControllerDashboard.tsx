@@ -12,6 +12,10 @@ import WebTerminal from "~/Components/WebTerminal";
 import { CommandUplink, OutputLog } from "~/Components/CommandPanel";
 import ConfigDashboard from "~/Components/ConfigDashboard";
 
+import DynamicJsonGraph from "~/Components/TelemetryGraph";
+import MotorTelemetry from "~/Components/MotorTelemetry";
+import TelemetryGraphs from "~/Components/TelemetryGraphs";
+
 
 interface ConfigState {
   P: number;
@@ -27,7 +31,7 @@ export default function ControllerDashboard() {
   const { uiState, speed, handleChange, mode } = useButtonInput();
   const { health } = useHealth();
   const [logs, setLogs] = useState<{ time: string; msg: string; source: 'TX' | 'RX' }[]>([]);
-  const [config, setConfig] = useState<ConfigState>({ P: 4.0, I: 1, D: 0.01 });
+  const [config, setConfig] = useState<ConfigState>({ P: 1.50, I: 0.3, D: 0.3 });
 
   // Logic for Vehicle Offline
   const lastBeat = Math.floor((Date.now() - (health?.last_message_time || Date.now())) / 1000);
@@ -35,6 +39,18 @@ export default function ControllerDashboard() {
 
   const [isTerminalMode, setIsTerminalMode] = useState(false);
   const [isRCOn, setIsRCOn] = useState(true);
+  const [motorTelemetry, setMotorTelemetry] = useState<{
+    V: number
+    I: number
+    P: number
+  } | null>(null);
+
+  // Optimization: Store latest telemetry in ref to throttle re-renders
+  const latestTelemetryRef = useRef<{ V: number; I: number; P: number } | null>(null);
+
+  // Performance Controls State
+  const [enableTelemetry, setEnableTelemetry] = useState(true);
+  const [enableGraphs, setEnableGraphs] = useState(true);
 
   // Helper to add logs from child components
   const addLog = (msg: string, source: 'TX' | 'RX') => {
@@ -44,40 +60,74 @@ export default function ControllerDashboard() {
 
   // Handle Incoming Messages
   useEffect(() => {
-    if (lastMessage) {
-      const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
-      let msgStr = "";
+    if (!lastMessage) return;
 
-      if (typeof lastMessage === "string") {
-        msgStr = lastMessage;
+    const time = new Date().toLocaleTimeString('en-US', {
+      hour12: false,
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit"
+    });
 
+    let parsed: any = null;
+
+    // 1️⃣ Normalize to object if possible
+    if (typeof lastMessage === "string") {
+      try {
+        parsed = JSON.parse(lastMessage);
+      } catch {
+        // Not JSON, treat as plain string
         setLogs(prev => {
-          const newLogs = [...prev, { time, msg: msgStr, source: 'RX' as const }];
-          return newLogs.slice(-20); // Keep last 20
+          const newLogs = [...prev, { time, msg: lastMessage, source: 'RX' as const }];
+          return newLogs.slice(-20);
         });
-
-      } else if (
-        lastMessage instanceof ArrayBuffer ||
-        lastMessage instanceof Blob ||
-        ArrayBuffer.isView(lastMessage) || // Uint8Array, Int16Array, etc
-        (typeof Buffer !== "undefined" && Buffer.isBuffer(lastMessage))
-      ) {
-        // PURE binary
-        console.log("binary msg");
-
-      } else if (typeof lastMessage === "object") {
-        msgStr = JSON.stringify(lastMessage);
-
-        setLogs(prev => {
-          const newLogs = [...prev, { time, msg: msgStr, source: 'RX' as const }];
-          return newLogs.slice(-20); // Keep last 20
-        });
+        return;
       }
-
-
-
+    } else if (typeof lastMessage === "object") {
+      parsed = lastMessage;
     }
+
+    // 2️⃣ Detect motorTelemetry JSON (shape check)
+    if (
+      parsed &&
+      typeof parsed === "object" &&
+      parsed.motorTelemetry &&
+      typeof parsed.motorTelemetry.V === "number" &&
+      typeof parsed.motorTelemetry.I === "number" &&
+      typeof parsed.motorTelemetry.P === "number"
+    ) {
+      const { V, I, P } = parsed.motorTelemetry;
+
+      // ✅ Update telemetry UI
+      setMotorTelemetry({ V, I, P });
+
+      // ❌ DO NOT log this message
+      return;
+    }
+
+    // 3️⃣ Everything else → logs
+    if (parsed) {
+      setLogs(prev => {
+        const newLogs = [
+          ...prev,
+          { time, msg: JSON.stringify(parsed), source: 'RX' as const }
+        ];
+        return newLogs.slice(-20);
+      });
+    }
+
   }, [lastMessage]);
+
+  // Throttled UI Update Loop (10Hz)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (latestTelemetryRef.current && enableTelemetry) {
+        setMotorTelemetry(latestTelemetryRef.current);
+        // Optional: clear it if you want to detect "no data", but keeping the last known value is usually better for OSD
+      }
+    }, 100); // Update UI every 100ms (10fps) instead of network speed
+    return () => clearInterval(interval);
+  }, [enableTelemetry]);
 
   // Handle config send Packets
 
@@ -87,11 +137,23 @@ export default function ControllerDashboard() {
     }
   };
 
+  // Use a ref to hold the latest input state so we don't restart the interval on every change
+  const uiStateRef = useRef(uiState);
   useEffect(() => {
-    if (connection && isRCOn) {
-      send(makeRC_Packet(uiState));
-    }
-  }, [uiState, connection, send, isRCOn]);
+    uiStateRef.current = uiState;
+  }, [uiState]);
+
+  useEffect(() => {
+    if (!connection || !isRCOn) return;
+
+    // Send RC packets at a fixed rate (e.g., 20Hz = 50ms)
+    // This prevents flooding the network when inputs change rapidly
+    const interval = setInterval(() => {
+      send(makeRC_Packet(uiStateRef.current));
+    }, 50);
+
+    return () => clearInterval(interval);
+  }, [connection, isRCOn]); // uiState is NOT a dependency here
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200 font-sans p-4 lg:p-8 selection:bg-indigo-500/30">
@@ -106,7 +168,10 @@ export default function ControllerDashboard() {
           </h1>
           <p className="text-slate-400 text-sm mt-1 ml-6">Remote Teleoperation Interface</p>
         </div>
-
+        <div>
+          {/* Telemetry moved to HUD */}
+          <MotorTelemetry data={motorTelemetry} />
+        </div>
         <div className="flex gap-4 items-center bg-slate-900/50 p-2 rounded-2xl border border-slate-800">
           {/* RC Toggle */}
           <button
@@ -234,6 +299,8 @@ export default function ControllerDashboard() {
                   <div className="absolute left-1/2 top-0 bottom-0 w-[1px] bg-white/20" />
                 </div>
               )}
+              {/* Motor Telemetry HUD */}
+              {!isVehicleOffline}
             </div>
 
             {/* Action Overlay */}
@@ -252,12 +319,33 @@ export default function ControllerDashboard() {
             <MetricRow label="Status" value={isVehicleOffline ? "OFFLINE" : health?.container_status || "N/A"} />
             <MetricRow label="up_time" value={health?.up_time || 0} unit="s" />
             <MetricRow label="Last Beat" value={lastBeat} unit="s ago" />
-
-
           </Card>
+
+          <Card title="Performance Controls">
+            <div className="flex flex-col gap-3">
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${enableTelemetry ? "bg-emerald-500 border-emerald-500" : "border-slate-600 bg-slate-800"}`}>
+                  {enableTelemetry && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                </div>
+                <input type="checkbox" className="hidden" checked={enableTelemetry} onChange={e => setEnableTelemetry(e.target.checked)} />
+                <span className={`text-sm font-medium transition-colors ${enableTelemetry ? "text-white" : "text-slate-500"}`}>Enable Telemetry Parsing</span>
+              </label>
+
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${enableGraphs ? "bg-indigo-500 border-indigo-500" : "border-slate-600 bg-slate-800"}`}>
+                  {enableGraphs && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                </div>
+                <input type="checkbox" className="hidden" checked={enableGraphs} onChange={e => setEnableGraphs(e.target.checked)} />
+                <span className={`text-sm font-medium transition-colors ${enableGraphs ? "text-white" : "text-slate-500"}`}>Enable Graphs</span>
+              </label>
+            </div>
+          </Card>
+
           <Card title="Latency History">
             <LatencyGraph currentLatency={isVehicleOffline ? 0 : health?.latency || 0} />
           </Card>
+
+          {enableGraphs && <TelemetryGraphs data={motorTelemetry} />}
 
           <Card title="Auxiliary">
             <ProgressBar label="Aux 1" value={uiState.aux1} color="bg-emerald-500" />
@@ -278,7 +366,7 @@ export default function ControllerDashboard() {
             </div>
           )}
 
-          {!isTerminalMode && (
+          {/* {!isTerminalMode && (
             <OutputLog logs={logs} />
           )}
 
@@ -290,9 +378,11 @@ export default function ControllerDashboard() {
               isRCOn={isRCOn}
               onLog={addLog}
             />
-          )}
+          )} */}
         </div>
       </main>
+      {/* <h3>Dynamic Telemetry Graph</h3> */}
+      {/* <DynamicJsonGraph logs={logs} maxPoints={60} /> */}
     </div>
   );
 }

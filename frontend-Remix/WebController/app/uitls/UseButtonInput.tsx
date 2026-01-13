@@ -29,8 +29,18 @@ export default function useButtonInput() {
 
     const [mode, setMode] = useState("MANUAL");
 
+    // Last update timestamp for throttling
+    const lastUpdateRef = useRef(0);
+
     // 2. Wrap in useCallback or update logic to avoid stale closures
-    const updateUiState = useCallback(() => {
+    const updateUiState = useCallback((force = false) => {
+        const now = Date.now();
+        // Throttle to 100ms (10FPS) unless forced (e.g. keyup/stop)
+        if (!force && now - lastUpdateRef.current < 100) {
+            return;
+        }
+        lastUpdateRef.current = now;
+
         setUiState({
             throttle: throttleRef.current,
             roll: rollRef.current,
@@ -77,7 +87,7 @@ export default function useButtonInput() {
             default:
                 return;
         }
-        updateUiState();
+        updateUiState(false); // Throttle key holds
     }, [updateUiState]);
 
     const handleKeyUp = useCallback((e: KeyboardEvent) => {
@@ -90,7 +100,7 @@ export default function useButtonInput() {
         if (e.key === ' ') {
             aux1Ref.current = 1000;
         }
-        updateUiState();
+        updateUiState(true); // Force update on release for safety
     }, [updateUiState]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -100,7 +110,7 @@ export default function useButtonInput() {
 
         if (isAutoModeRef.current) {
             throttleRef.current = 1500 - newSpeed;
-            updateUiState();
+            updateUiState(false);
         }
     };
 
